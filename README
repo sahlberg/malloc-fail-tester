@@ -1,0 +1,55 @@
+Test framework for malloc failures
+----------------------------------
+
+This is a simple framework for Linux to test applications, and all the shared
+libraries they depend on, on how they handle OOM situations by triggering malloc()
+(and calloc()) to fail and return NULL.
+This tests for both programs/libraries that terminate with SEGV.
+
+Building
+--------
+$ make all
+
+Test that the tool works
+------------------------
+$ make test
+This should report at least one failure and should looks something like this:
+...
+./test_malloc_failure.sh ./crash
+Need to test 3 allocations for ./crash
+Crash at allocation #2
+           PID: 338218 (crash)
+           UID: 1000 (sahlberg)
+           GID: 1000 (sahlberg)
+        Signal: 11 (SEGV)
+     Timestamp: Sun 2024-12-22 16:51:01 AEST (258ms ago)
+  Command Line: ./crash
+    Executable: /data/sahlberg/malloc-fail/crash
+ Control Group: /user.slice/user-1000.slice/user@1000.service/app.slice/app-org.gnome.Terminal.slice/vte-spawn-4c26aa48-94ca-4e49-9fee-e8a1d4980285.scope
+          Unit: user@1000.service
+     User Unit: vte-spawn-4c26aa48-94ca-4e49-9fee-e8a1d4980285.scope
+         Slice: user-1000.slice
+     Owner UID: 1000 (sahlberg)
+       Boot ID: 69b77f67c44e48129fd7e191d8317edb
+    Machine ID: 94b9e1dd726e4cc9a0fb0dc93b9a801a
+      Hostname: fedora
+       Storage: /var/lib/systemd/coredump/core.crash.1000.69b77f67c44e48129fd7e191d8317edb.338218.1734850261000000.zst (present)
+  Size on Disk: 21.7K
+       Message: Process 338218 (crash) of user 1000 dumped core.
+                
+                Stack trace of thread 338218:
+                #0  0x0000000000401142 crasher (crash + 0x1142)
+                #1  0x00000000004011ae main (crash + 0x11ae)
+                #2  0x00007f4e14317088 __libc_start_call_main (libc.so.6 + 0x2a088)
+                #3  0x00007f4e1431714b __libc_start_main@@GLIBC_2.34 (libc.so.6 + 0x2a14b)
+                #4  0x0000000000401075 _start (crash + 0x1075)
+                ELF object binary architecture: AMD x86-64
+NUM_CRASHES:1
+...
+
+How to use it
+-------------
+Run it as ./test_malloc_failure with the arguments being the command line to test:
+
+$ ./test_malloc_failure.sh gcc --version
+
