@@ -3,7 +3,7 @@
 PROGRAM=$1
 shift
 
-NUM_CALLS=`LD_PRELOAD=./ld_alloc_counter.so $PROGRAM $@ 2>&1 | grep "NUM_ALLOC:" | sed -e "s/NUM_ALLOC://"`
+NUM_CALLS=`LD_PRELOAD=./ld_alloc_counter.so $PROGRAM $@ 99>&1 1>/dev/null | wc -c`
 echo "Need to test $NUM_CALLS allocations for" $PROGRAM $@
 NUM_CRASHES=0
 for IDX in `seq 0 $NUM_CALLS`; do

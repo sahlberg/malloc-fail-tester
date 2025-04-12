@@ -18,35 +18,39 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
 
 int alloc_fail = -1;
 
-void *(*real_malloc)(size_t size);
-void *(*real_calloc)(size_t nelem, size_t size);
-
 void *malloc(size_t size)
 {
         static int call_idx = 0;
+        static void *(*real_malloc)(size_t) = NULL;
+        if (real_malloc == NULL) {
+        	real_malloc = dlsym(RTLD_NEXT, "malloc");
+        }
 
+        if (alloc_fail == -1) {
+		alloc_fail = atoi(getenv("ALLOC_FAIL"));
+        }
+        
         if (call_idx++ == alloc_fail) {
                 return NULL;
         }
+
         return real_malloc(size);
 }
 
 void *calloc(size_t nelem, size_t size)
 {
         static int call_idx = 0;
-
+        static void *(*real_calloc)(size_t, size_t) = NULL;
+        if (real_calloc == NULL) {
+        	real_calloc = dlsym(RTLD_NEXT, "calloc");
+        }
+        
+        if (alloc_fail == -1) {
+		alloc_fail = atoi(getenv("ALLOC_FAIL"));
+        }
         if (call_idx++ == alloc_fail) {
                 return NULL;
         }
-        return real_calloc(nelem, size);
-}
 
-static void __attribute__((constructor))
-_init(void)
-{
-	if (getenv("ALLOC_FAIL") != NULL) {
-		alloc_fail = atoi(getenv("ALLOC_FAIL"));
-	}
-	real_malloc = dlsym(RTLD_NEXT, "malloc");
-	real_calloc = dlsym(RTLD_NEXT, "calloc");
+        return real_calloc(nelem, size);
 }

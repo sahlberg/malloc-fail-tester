@@ -11,39 +11,32 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <dlfcn.h>
 #include <execinfo.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/syscall.h>
-#include <dlfcn.h>
-
-int alloc_count = 0;
-
-void *(*real_malloc)(size_t size);
-void *(*real_calloc)(size_t nelem, size_t size);
+#include <unistd.h>
 
 void *malloc(size_t size)
 {
-        alloc_count++;
+        static void *(*real_malloc)(size_t) = NULL;
+        if (real_malloc == NULL) {
+        	real_malloc = dlsym(RTLD_NEXT, "malloc");
+        }
+
+        write(99, "M", 1);
         return real_malloc(size);
 }
 
 void *calloc(size_t nelem, size_t size)
 {
-        alloc_count++;
+        static void *(*real_calloc)(size_t, size_t) = NULL;
+        if (real_calloc == NULL) {
+        	real_calloc = dlsym(RTLD_NEXT, "calloc");
+        }
+        
+        write(99, "C", 1);
         return real_calloc(nelem, size);
-}
-
-static void __attribute__((constructor))
-_init(void)
-{
-	real_malloc = dlsym(RTLD_NEXT, "malloc");
-	real_calloc = dlsym(RTLD_NEXT, "calloc");
-}
-
-static void __attribute__((destructor))
-_print_num_allocs(void)
-{
-        fprintf(stderr, "NUM_ALLOC:%d\n", alloc_count);
 }
